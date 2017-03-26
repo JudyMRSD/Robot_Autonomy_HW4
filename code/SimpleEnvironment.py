@@ -100,7 +100,41 @@ class SimpleEnvironment(object):
 
             # TODO: Here you will construct a set of actions
             #  to be used during the planning process
-            #
+
+            #create a list named control to store a set controls
+            controls = []
+            c1 = Control(1.0,1.0,0.1)
+            c2 = Control(1.0,-1.0,0.1)
+            c3 = Control(-1.0,-1.0,0.1)
+            c4 = Control(-1.0,1.0,0.1)
+            controls.append(c1)
+            controls.append(c2)
+            controls.append(c3)
+            controls.append(c4)
+
+            #create coorespondance footprint of each control
+            footprints = []
+            f1 = GenerateFootprintFromControl(start_config, c1, 0.01)
+            f2 = GenerateFootprintFromControl(start_config, c2, 0.01)
+            f3 = GenerateFootprintFromControl(start_config, c3, 0.01)
+            f4 = GenerateFootprintFromControl(start_config, c4, 0.01)
+            footprints.append(f1)
+            footprints.append(f2)
+            footprints.append(f3)
+            footprints.append(f4)
+
+            #create a set of actions
+            a1 = Actions(controls[0],footprints[0])
+            a2 = Actions(controls[1],footprints[1])
+            a3 = Actions(controls[2],footprints[2])
+            a4 = Actions(controls[3],footprints[3])
+
+            self.actions[idx].append(a1)
+            self.actions[idx].append(a2)
+            self.actions[idx].append(a3)
+            self.actions[idx].append(a4)
+
+
          
             
 
