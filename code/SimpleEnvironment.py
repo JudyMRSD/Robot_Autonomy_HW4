@@ -159,7 +159,7 @@ class SimpleEnvironment(object):
         return successors
 
 
-  	def RobotIsInCollisionAt(self, point=None):
+    def RobotIsInCollisionAt(self, point=None):
         """
         Call self.RobotIsInCollisionAt() to check collision in current state
              self.RobotIsInCollisionAt(np2darray) to check at another point
