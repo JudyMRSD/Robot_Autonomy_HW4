@@ -48,7 +48,6 @@ class AStarPlanner(object):
 
         print(('A* planning ... \n Start State ... %s \n Start ID ... %s \n Goal State ... %s \n Goal ID ... %s \n') % (start_config, start_id, goal_config, goal_id))
 
-        # Contains (dist_2_goal, node_id)
         open_set = [(self.planning_env.ComputeDistance(start_id, goal_id), start_id)]
         closed_set = set([])
 
