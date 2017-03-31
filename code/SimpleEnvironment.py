@@ -151,7 +151,7 @@ class SimpleEnvironment(object):
         		final_config = [config[0] + avail_actions[i].footprint[-1][0], config[1] + avail_actions[i].footprint[-1][1], config[2]]
 	        	#successor_id  = self.discrete_env.ConfigurationToNodeId(avail_actions[i].footprint[-1])
 	        	successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
-	        	successor_control = [avail_actions[i].ul, avail_actions[i].ur, avail_actions[i].dt]
+	        	successor_control = [avail_actions[i].control]
 	        	successors.append([successor_id, successor_control])
 
         #successors = [successors[item] for item in successors 
