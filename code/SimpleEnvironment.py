@@ -124,10 +124,10 @@ class SimpleEnvironment(object):
             footprints.append(f4)
 
             #create a set of actions
-            a1 = Actions(controls[0],footprints[0])
-            a2 = Actions(controls[1],footprints[1])
-            a3 = Actions(controls[2],footprints[2])
-            a4 = Actions(controls[3],footprints[3])
+            a1 = Action(controls[0],footprints[0])
+            a2 = Action(controls[1],footprints[1])
+            a3 = Action(controls[2],footprints[2])
+            a4 = Action(controls[3],footprints[3])
 
             self.actions[idx].append(a1)
             self.actions[idx].append(a2)
