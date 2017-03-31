@@ -114,10 +114,10 @@ class SimpleEnvironment(object):
 
             #create coorespondance footprint of each control
             footprints = []
-            f1 = GenerateFootprintFromControl(start_config, c1, 0.01)
-            f2 = GenerateFootprintFromControl(start_config, c2, 0.01)
-            f3 = GenerateFootprintFromControl(start_config, c3, 0.01)
-            f4 = GenerateFootprintFromControl(start_config, c4, 0.01)
+            f1 = self.GenerateFootprintFromControl(start_config, c1, 0.01)
+            f2 = self.GenerateFootprintFromControl(start_config, c2, 0.01)
+            f3 = self.GenerateFootprintFromControl(start_config, c3, 0.01)
+            f4 = self.GenerateFootprintFromControl(start_config, c4, 0.01)
             footprints.append(f1)
             footprints.append(f2)
             footprints.append(f3)
