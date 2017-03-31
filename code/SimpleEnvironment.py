@@ -124,18 +124,15 @@ class SimpleEnvironment(object):
             footprints.append(f4)
 
             #create a set of actions
-            a1 = Actions(controls[0],footprints[0])
-            a2 = Actions(controls[1],footprints[1])
-            a3 = Actions(controls[2],footprints[2])
-            a4 = Actions(controls[3],footprints[3])
+            a1 = Action(controls[0],footprints[0])
+            a2 = Action(controls[1],footprints[1])
+            a3 = Action(controls[2],footprints[2])
+            a4 = Action(controls[3],footprints[3])
 
             self.actions[idx].append(a1)
             self.actions[idx].append(a2)
             self.actions[idx].append(a3)
             self.actions[idx].append(a4)
-
-
-         
             
 
     def GetSuccessors(self, node_id):
@@ -146,8 +143,45 @@ class SimpleEnvironment(object):
         #  up the configuration associated with the particular node_id
         #  and return a list of node_ids and controls that represent the neighboring
         #  nodes
-        
+        config = self.discrete_env.NodeIdToConfiguration(node_id)
+        avail_actions = self.actions[config[2]]
+
+        for i in range(len(avail_actions)):
+        	if not self.RobotIsInCollisionAt(avail_actions[i].footprint[-1]):
+        		final_config = [config[0] + avail_actions[i].footprint[-1][0], config[1] + avail_actions[i].footprint[-1][1], config[2]]
+	        	#successor_id  = self.discrete_env.ConfigurationToNodeId(avail_actions[i].footprint[-1])
+	        	successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
+	        	successor_control = [avail_actions[i].ul, avail_actions[i].ur, avail_actions[i].dt]
+	        	successors.append([successor_id, successor_control])
+
+        #successors = [successors[item] for item in successors 
+         #               if not self.RobotIsInCollisionAt(item[1])]
         return successors
+
+
+  	def RobotIsInCollisionAt(self, point=None):
+        """
+        Call self.RobotIsInCollisionAt() to check collision in current state
+             self.RobotIsInCollisionAt(np2darray) to check at another point
+        """
+
+        # Point should be a 2D np array with the configuration.
+        # Leave empty if checking collision at current point
+        if point is None:
+            return self.robot.GetEnv().CheckCollision(self.robot)
+
+        # If checking collision in point other than current state, move robot
+        #  to that point, check collision, then move it back.
+        current_state = self.robot.GetTransform()
+
+        check_state = np.copy(current_state)
+        check_state[:2,3] = point
+        self.robot.SetTransform(check_state)
+
+        in_collision = self.robot.GetEnv().CheckCollision(self.robot)
+        self.robot.SetTransform(current_state)  # move robot back to current state
+        return in_collision
+
 
     def ComputeDistance(self, start_id, end_id):
 
