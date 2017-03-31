@@ -1,5 +1,6 @@
-import logging, numpy, openravepy
+import logging, numpy, openravepy, time
 from openravepy.databases.inversereachability import *
+#from openravepy.databases import inversereachability
 
 
 class GraspPlanner(object):
@@ -29,53 +30,57 @@ class GraspPlanner(object):
         self.order_grasps()
         #choose the first valid grasp
         validgrasp = self.grasps_ordered[0]
-        Tgrasp = self.gmodel.getGlobalGraspTransform(validgrasp,collisionfree=True) # get the grasp transform
+        # get the grasp transform
+        Tgrasp = self.gmodel.getGlobalGraspTransform(validgrasp,collisionfree=True) 
 
         # load inverserechability database
-		self.irmodel = InverseReachabilityModel(robot=self.robot)
-		starttime = time.time()
-		print 'loading irmodel'
-		if not self.irmodel.load():
-    		print 'do you want to generate irmodel for your robot? it might take several hours'
-    		print 'or you can go to http://people.csail.mit.edu/liuhuan/pr2/openrave/openrave_database/ to get the database for PR2'
-    		input = raw_input('[Y/n]')
-    		if input == 'y' or input == 'Y' or input == '\n' or input == '':
-        		class IrmodelOption:
-        		self.irmodel.autogenerate()
-        		self.irmodel.load()
-    		else:
-        		raise ValueError('')
+        self.irmodel = InverseReachabilityModel(robot=self.robot)
+        starttime = time.time()
+        print 'loading irmodel'
+        if not self.irmodel.load():
+            print 'do you want to generate irmodel for your robot? it might take several hours'
+            print 'or you can go to http://people.csail.mit.edu/liuhuan/pr2/openrave/openrave_database/ to get the database for PR2'
+            input = raw_input('[Y/n]')
+            if input == 'y' or input == 'Y' or input == '\n' or input == '':
+                class IrmodelOption:
+                   self.irmodel.autogenerate()
+                   self.irmodel.load()
+            else:
+                raise ValueError('')
         
-		print 'time to load inverse-reachability model: %fs'%(time.time()-starttime)
+        print 'time to load inverse-reachability model: %fs'%(time.time()-starttime)
 
-		densityfn,samplerfn,bounds = self.irmodel.computeBaseDistribution(Tgrasp)
+        densityfn,samplerfn,bounds = self.irmodel.computeBaseDistribution(Tgrasp)
 
 		#find the valid pose and joint states
 		# initialize sampling parameters
-		goals = []
-		numfailures = 0
-		starttime = time.time()
-		timeout = inf
-		with self.robot:
-    		while len(goals) < 3:
-        		if time.time()-starttime > timeout:
-            		break
-        		poses,jointstate = samplerfn(N-len(goals))
-        		for pose in poses:
-            		self.robot.SetTransform(pose)
-            		self.robot.SetDOFValues(*jointstate)
-            		# validate that base is not in collision
-            		if not self.manip.CheckIndependentCollision(CollisionReport()):
-                		q = self.manip.FindIKSolution(Tgrasp,filteroptions=IkFilterOptions.CheckEnvCollisions)
-                		if q is not None:
-                    		values = self.robot.GetDOFValues()
-                    		values[self.manip.GetArmIndices()] = q
-                    		goals.append((Tgrasp,pose,values))
-                		elif self.manip.FindIKSolution(Tgrasp,0) is None:
-                    		numfailures += 1
+        goals = []
+        numfailures = 0
+        starttime = time.time()
+        timeout = inf
+        with self.robot:
+            while len(goals) < 3:
+                if time.time()-starttime > timeout:
+                    break
+                poses,jointstate = samplerfn(N-len(goals))
+                for pose in poses:
+                    self.robot.SetTransform(pose)
+                    self.robot.SetDOFValues(*jointstate)
+                    # validate that base is not in collision
+                    if not self.manip.CheckIndependentCollision(CollisionReport()):
+                        q = self.manip.FindIKSolution(Tgrasp,filteroptions=IkFilterOptions.CheckEnvCollisions)
+                        if q is not None:
+                            values = self.robot.GetDOFValues()
+                            values[self.manip.GetArmIndices()] = q
+                            goals.append((Tgrasp,pose,values))
+                        elif self.manip.FindIKSolution(Tgrasp,0) is None:
+                            numfailures += 1
         # To do still
-        base_pose = 
-        grasp_config = 
+        base_pose = goals[0][1]
+        grasp_config = goals[0][2]
+
+        import IPython
+        IPython.embed()
 
         return base_pose, grasp_config
 
@@ -113,21 +118,21 @@ class GraspPlanner(object):
       #Code copied from hw1(the following two functions) 
 
       # order the grasps - call eval grasp on each, set the 'performance' index, and sort
-  	def order_grasps(self):
-    	self.grasps_ordered = self.gmodel.grasps.copy() #you should change the order of self.grasps_ordered
-    	for grasp in self.grasps_ordered:
-      		grasp[self.gmodel.graspindices.get('performance')] = self.eval_grasp(grasp)
+    def order_grasps(self):
+        self.grasps_ordered = self.gmodel.grasps.copy() #you should change the order of self.grasps_ordered
+        for grasp in self.grasps_ordered:
+            grasp[self.gmodel.graspindices.get('performance')] = self.eval_grasp(grasp)
     
     	# sort!
-    	order = np.argsort(self.grasps_ordered[:,self.gmodel.graspindices.get('performance')[0]])
-    	order = order[::-1]
-    	self.grasps_ordered = self.grasps_ordered[order]
+        order = np.argsort(self.grasps_ordered[:,self.gmodel.graspindices.get('performance')[0]])
+        order = order[::-1]
+        self.grasps_ordered = self.grasps_ordered[order]
 
-	def eval_grasp(self, grasp):
+    def eval_grasp(self, grasp):
       with self.robot:
       #contacts is a 2d array, where contacts[i,0-2] are the positions of contact i and contacts[i,3-5] is the direction
-      	try:
-    	  contacts,finalconfig,mindist,volume = self.gmodel.testGrasp(grasp=grasp,translate=True,forceclosure=False)
+        try:
+          contacts,finalconfig,mindist,volume = self.gmodel.testGrasp(grasp=grasp,translate=True,forceclosure=False)
 
           obj_position = self.gmodel.target.GetTransform()[0:3,3]   
         

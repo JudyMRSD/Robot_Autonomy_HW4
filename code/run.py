@@ -108,10 +108,12 @@ if __name__ == "__main__":
     bottle.SetTransform(bottle_transform)
  
     planner = GraspPlanner(herb.robot, base_planner, arm_planner)
-    planner.PlanToGrasp(bottle)
+    #commend out by Kai to test
+    #planner.PlanToGrasp(bottle)
 
-    import IPython
-    IPython.embed()
+    planner.GetBasePoseForObjectGrasp(bottle)
+    #import IPython
+    #IPython.embed()
 
 
         
