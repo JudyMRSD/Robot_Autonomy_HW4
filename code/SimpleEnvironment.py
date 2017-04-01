@@ -112,12 +112,22 @@ class SimpleEnvironment(object):
         avail_actions = self.actions[coord[2]]
 
         for i in range(len(avail_actions)):
-            if True:  #not self.RobotIsInCollisionAt(avail_actions[i].footprint[-1]):
-                final_config = [config[0] + avail_actions[i].footprint[-1][0], config[1] + avail_actions[i].footprint[-1][1], avail_actions[i].footprint[-1][2]]
-                successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
+            for j in range(len(avail_actions[i].footprint)):
+                true_footprint = []
+                check = 0;
+                if not self.RobotIsInCollisionAt(avail_actions[i].footprint[j][:2]):
+                    true_config = [config[0] + avail_actions[i].footprint[j][0], config[1] + avail_actions[i].footprint[j][1], avail_actions[i].footprint[j][2]]
+                    true_footprint.append(true_config)
+                else:
+                    # go to next action
+                    check = -1 
+                    break
+            if (check != -1):
                 successor_control = avail_actions[i].control
-                successors.append([successor_id, successor_control])
-
+                final_config = true_footprint[-1]
+                successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
+                successors.append([successor_id, Action(successor_control, true_footprint)])
+                
         return successors
 
 
@@ -134,8 +144,11 @@ class SimpleEnvironment(object):
         # If checking collision in point other than current state, move robot
         #  to that point, check collision, then move it back.
         current_state = self.robot.GetTransform()
-
+        # print '-----------------------------------------'
+        # print current_state
         check_state = numpy.copy(current_state)
+        # print '-----------------------------------------'
+        # print point
         check_state[:2,3] = point
         self.robot.SetTransform(check_state)
 
