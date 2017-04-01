@@ -42,31 +42,47 @@ if __name__ == "__main__":
     herb_base = SimpleRobot(env, robot)
     base_env = SimpleEnvironment(herb_base, resolution)
 
-    start_config = numpy.array([0, 0, 0])
-    goal_config = numpy.array([2, 3, 0])
+    # start_config = numpy.array([0, 0, 0])
+    # goal_config = numpy.array([2, 3, 0])
 
-    raw_input('Press enter to continue')
-    #sid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
-    #start_config = base_env.discrete_env.NodeIdToConfiguration(sid)
+    # # added by Sumit to convert start configuration to one accessible by node id
+    # sid = base_env.discrete_env.ConfigurationToNodeId(start_config)
+    # sconfig = base_env.discrete_env.NodeIdToConfiguration(sid)
+    # herb_base.SetCurrentConfiguration(sconfig)
+
+    #raw_input('Press enter to continue')
+    raw_input('Move robot to start config and press enter')
+    sid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
+    start_config = base_env.discrete_env.NodeIdToConfiguration(sid)
     herb_base.SetCurrentConfiguration(start_config)
 
     tstart = robot.GetTransform()
     hstart = openravepy.misc.DrawAxes(env, tstart)
     hstart.SetShow(True)
+
+    # # added by Sumit to convert goal configuration to one accessible by node id
+    # gid = base_env.discrete_env.ConfigurationToNodeId(goal_config)
+    # gconfig = base_env.discrete_env.NodeIdToConfiguration(gid)
+    # herb_base.SetCurrentConfiguration(gconfig)
     
 
-    #raw_input('Move robot to goal config and press enter')
-    #gid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
-    #goal_config = base_env.discrete_env.NodeIdToConfiguration(gid)
+    raw_input('Move robot to goal config and press enter')
+    gid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
+    goal_config = base_env.discrete_env.NodeIdToConfiguration(gid)
     herb_base.SetCurrentConfiguration(goal_config)
 
     tgoal = robot.GetTransform()
     hgoal = openravepy.misc.DrawAxes(env, tgoal)
     hgoal.SetShow(True)
 
+    # # changed by Sumit to accept sconfig
+    # herb_base.SetCurrentConfiguration(sconfig)
     herb_base.SetCurrentConfiguration(start_config)
 
-    planner = AStarPlanner(base_env, visualize=True)
+    planner = AStarPlanner(base_env, visualize=False)
+
+    # # changed by Sumit to accept sconfig, gconfig
+    # plan = planner.Plan(sconfig, gconfig)
     plan = planner.Plan(start_config, goal_config)
     traj = herb_base.ConvertPlanToTrajectory(plan)
 
