@@ -115,7 +115,7 @@ class SimpleEnvironment(object):
             for j in range(len(avail_actions[i].footprint)):
                 true_footprint = []
                 check = 0;
-                if not self.RobotIsInCollisionAt(avail_actions[i].footprint[j][:2]):
+                if not self.RobotIsInCollisionAt(avail_actions[i].footprint[j]):
                     true_config = [config[0] + avail_actions[i].footprint[j][0], config[1] + avail_actions[i].footprint[j][1], avail_actions[i].footprint[j][2]]
                     true_footprint.append(true_config)
                 else:
@@ -127,7 +127,7 @@ class SimpleEnvironment(object):
                 final_config = true_footprint[-1]
                 successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
                 successors.append([successor_id, Action(successor_control, true_footprint)])
-                
+
         return successors
 
 
@@ -136,8 +136,7 @@ class SimpleEnvironment(object):
         Call self.RobotIsInCollisionAt() to check collision in current state
              self.RobotIsInCollisionAt(np2darray) to check at another point
         """        
-        # Point should be a 2D np array with the configuration.
-        # Leave empty if checking collision at current point
+
         if point is None:
             return self.robot.GetEnv().CheckCollision(self.robot)
 
@@ -149,11 +148,13 @@ class SimpleEnvironment(object):
         check_state = numpy.copy(current_state)
         # print '-----------------------------------------'
         # print point
-        check_state[:2,3] = point
-        self.robot.SetTransform(check_state)
-
-        in_collision = self.robot.GetEnv().CheckCollision(self.robot)
+        check_state[:3, 3] = numpy.array([point[0], point[1], 0.0])
+        check_state[:3, :3] = numpy.array([[numpy.cos(point[2]), -numpy.sin(point[2]),0.0],[numpy.sin(point[2]),numpy.cos(point[2]),0.0],[0.0,0.0,1.0]])
+        
+        self.robot.SetTransform(check_state) 
+        in_collision = self.robot.GetEnv().CheckCollision(self.robot) and ((config < lower_limits).any() or (config > upper_limits).any())
         self.robot.SetTransform(current_state)  # move robot back to current state
+
         return in_collision
 
 
