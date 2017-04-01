@@ -18,8 +18,7 @@ class DiscreteEnvironment(object):
         self.num_cells = self.dimension * [0]
         for idx in range(self.dimension):
             self.num_cells[idx] = numpy.ceil((upper_limits[idx] - lower_limits[idx]) / resolution[idx])
-        # print self.num_cells
-
+        print self.num_cells
 
     def ConfigurationToNodeId(self, config):
 

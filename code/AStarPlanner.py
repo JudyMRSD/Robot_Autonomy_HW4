@@ -10,31 +10,43 @@ class NodeInfo:
         self.start_id = start_id
         self.goal_id = goal_id
         self.control = control
-
         self.planning_env = planning_env
-        self.dist2start = self.computeDist(node_id, start_id)
-        self.dist2goal = 10*self.computeDist(node_id, goal_id)
+        self.node_config = planning_env.discrete_env.NodeIdToConfiguration(node_id)
+
+        self.hops2start = 0
+        self.dist2goal = self.computeDist(node_id, goal_id)
         
     def computeDist(self, node1, node2):
         return self.planning_env.ComputeDistance(node1, node2)
     
-    def updateParent(self, parent_id, dist2start, control):
+    def computeHeuristic(self):
+        return self.hops2start + 3*self.dist2goal
+
+    def updateParent(self, parent_id, hops2start, control):
         self.parent_id = parent_id
-        self.dist2start = dist2start
+        self.hops2start = hops2start
         self.control = control
 
 class AStarPlanner(object):
-    
+
     def __init__(self, planning_env, visualize):
         self.planning_env = planning_env
         self.visualize = visualize
         self.nodes = dict()
+        self.log_flag = True
+
+    def log(self, txt, flag=True):
+        if self.log_flag and flag:
+            print(txt)
 
     def plotEdge(self, src_id, dst_id):
         src_coord = self.planning_env.discrete_env.NodeIdToConfiguration(src_id)
         dst_coord = self.planning_env.discrete_env.NodeIdToConfiguration(dst_id)
         if self.visualize:
             self.planning_env.PlotEdge(src_coord, dst_coord)
+
+    def dumpHeap(self, lst):
+        self.log(lst)
 
     def Plan(self, start_config, goal_config):
 
@@ -46,18 +58,20 @@ class AStarPlanner(object):
         start_id = self.planning_env.discrete_env.ConfigurationToNodeId(start_config)
         goal_id = self.planning_env.discrete_env.ConfigurationToNodeId(goal_config)
 
-        print(('A* planning ... \n Start State ... %s \n Start ID ... %s \n Goal State ... %s \n Goal ID ... %s \n') % (start_config, start_id, goal_config, goal_id))
-
+        self.log(('A* planning ... \n Start State ... %s \n Start ID ... %s \n Goal State ... %s \n Goal ID ... %s \n') % (start_config, start_id, goal_config, goal_id))
         open_set = [(self.planning_env.ComputeDistance(start_id, goal_id), start_id)]
         closed_set = set([])
 
         closest_dist2goal = self.planning_env.ComputeDistance(start_id, goal_id)
         closest_node = start_id
+        self.log('Closest dist to goal : ' + str(closest_dist2goal))
 
         node_info = {start_id: NodeInfo(0, None, 0, goal_id, self.planning_env, None)}
         heapq.heapify(open_set)
-
+       
         while (len(open_set) > 0):
+            raw_input('')
+            self.log('\nCurr queue ' + str(open_set), False)
 
             (t, node_id) = heapq.heappop(open_set)
             if node_id in closed_set:
@@ -68,50 +82,53 @@ class AStarPlanner(object):
                 closest_dist2goal, closest_node = dist2goal, node_id
 
             if (node_id != start_id):
-                closed_set.add((node_id, orient))
-                self.plotEdge(node_info[node_id][2], node_id)
-
-            if (len(node_info) % 5 ==0):
-                print('Closest dist to goal : ', closest_dist2goal)
+                closed_set.add(node_id)
+                node_config = self.planning_env.discrete_env.NodeIdToConfiguration(node_id)
+                self.log('Node ID ' + str(node_id) + ' Dist to goal : '+ str(node_info[node_id].dist2goal))
+                self.plotEdge(node_info[node_id].parent_id, node_id)
 
             if (node_id == goal_id):
-                print('Goal found')
+                self.log('Goal found')
                 break
 
             successors = self.planning_env.GetSuccessors(node_id)
 
             if len(successors) != 0:          
-                for action in successors:
-                    print('Footprint  ', action.footprint[-1])
-                    (succ_id, orient_succ) = self.planning_env.ConfigurationToNodeId(action.footprint[-1])
+                for [succ_id, control] in successors:
+                    self.log('Successor ' + str(succ_id), False)
                     if succ_id not in closed_set:
                         if succ_id in node_info:  
-                            if node_info[succ_id].dist2start > node_info[node_id].dist2start+1:
-                                node_info[succ_id].updateParent(nodeid, node_info[node_id].dist2start+1, action)
+                            self.log('Successor visited ' + str(succ_id), False)
+                            if node_info[succ_id].hops2start > node_info[node_id].hops2start+1:
+                                node_info[succ_id].updateParent(node_id, node_info[node_id].hops2start+1, control)
                         else: 
                             # Successor seen for the first time.
-                            node_info[(succ_id, orient_succ)] = NodeInfo(succ_id, nodeid, start_id, goal_id, self.planning_env, action)
-                            heapq.heappush(open_set, (node_info[succ_id].dist2start + node_info[succ_id].dist2goal, succ_id))
+                            node_info[succ_id] = NodeInfo(succ_id, node_id, start_id, goal_id, self.planning_env, control)
+                            self.log('Adding successor %s .. dist2goal : %s config: %s' %(succ_id, node_info[succ_id].dist2goal, node_info[succ_id].node_config), False)
+                            heapq.heappush(open_set, (node_info[succ_id].computeHeuristic(), succ_id))
+                    else:
+                        self.log('Successor in closed set : %s' % (succ_id), False)
             else:
-                print('No successors for ', node_id)
+                self.log(('No successors for %s'% (node_id)), False)
            
 
         plan = []
         if (goal_id not in node_info):
-            print ('Goal not reached ! Cannot plan path')
+            self.log ('Goal not reached ! Cannot plan path')
         else:
-            path = [goal_id]
-            while path[-1] != start_id:
-                path.append(node_info[path[-1]].control)
+            path = [node_info[goal_id]]
+            while path[-1].parent_id != start_id:
+                path.append(node_info[path[-1].parent_id])
+            path.append(node_info[start_id])
         
             plan =  path[::-1]
             elapsed = (datetime.datetime.now() - start).seconds
-            print('Plan length :', len(plan))
-            print('Nodes visited:', len(node_info))
-            print('Elapsed time:', elapsed)
+            self.log(('Plan length : %s') % (len(plan)))
+            self.log(('Nodes visited: %s') % (len(node_info)))
+            self.log(('Elapsed time: %s') % elapsed)
 
             if self.visualize and hasattr(self.planning_env, 'InitializePlot'):
                 self.planning_env.InitializePlot(goal_config)
-                [self.planning_env.PlotEdge(plan[i-1].action.footprint[-1], plan[i].action.footprint[-1]) for i in range(1,len(plan))]
+                [self.planning_env.PlotEdge(plan[i-1].node_config, plan[i].node_config) for i in range(1,len(plan))]
 
         return np.array(plan)

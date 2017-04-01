@@ -42,9 +42,12 @@ if __name__ == "__main__":
     herb_base = SimpleRobot(env, robot)
     base_env = SimpleEnvironment(herb_base, resolution)
 
-    raw_input('Move robot to start config and press enter')
-    sid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
-    start_config = base_env.discrete_env.NodeIdToConfiguration(sid)
+    start_config = numpy.array([0, 0, 0])
+    goal_config = numpy.array([2, 3, 0])
+
+    raw_input('Press enter to continue')
+    #sid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
+    #start_config = base_env.discrete_env.NodeIdToConfiguration(sid)
     herb_base.SetCurrentConfiguration(start_config)
 
     tstart = robot.GetTransform()
@@ -52,9 +55,9 @@ if __name__ == "__main__":
     hstart.SetShow(True)
     
 
-    raw_input('Move robot to goal config and press enter')
-    gid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
-    goal_config = base_env.discrete_env.NodeIdToConfiguration(gid)
+    #raw_input('Move robot to goal config and press enter')
+    #gid = base_env.discrete_env.ConfigurationToNodeId(herb_base.GetCurrentConfiguration())
+    #goal_config = base_env.discrete_env.NodeIdToConfiguration(gid)
     herb_base.SetCurrentConfiguration(goal_config)
 
     tgoal = robot.GetTransform()
@@ -63,7 +66,7 @@ if __name__ == "__main__":
 
     herb_base.SetCurrentConfiguration(start_config)
 
-    planner = AStarPlanner(base_env, visualize=False)
+    planner = AStarPlanner(base_env, visualize=True)
     plan = planner.Plan(start_config, goal_config)
     traj = herb_base.ConvertPlanToTrajectory(plan)
 
