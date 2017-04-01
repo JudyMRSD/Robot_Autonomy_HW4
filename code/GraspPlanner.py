@@ -1,5 +1,6 @@
-import logging, numpy, openravepy, time
+import logging, numpy, openravepy, time, math
 from openravepy.databases.inversereachability import *
+from openravepy import IkFilterOptions
 #from openravepy.databases import inversereachability
 
 

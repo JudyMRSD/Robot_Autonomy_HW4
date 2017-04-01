@@ -8,6 +8,7 @@ from SimpleRobot import SimpleRobot
 from SimpleEnvironment import SimpleEnvironment
 from GraspPlanner import GraspPlanner
 from AStarPlanner import AStarPlanner
+from RRTConnectPlanner import RRTConnectPlanner
 # TODO: Import the applicable RRTPlanner
 
 if __name__ == "__main__":
@@ -64,18 +65,19 @@ if __name__ == "__main__":
         robot.SetActiveManipulator('left_wam')
 
     robot.controller = openravepy.RaveCreateController(robot.GetEnv(), 'IdealController')
-    robot.ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(robot, iktype=openravepy.IkParameterization.Type.Transform6D)
-    if not robot.ikmodel.load():
-        robot.ikmodel.autogenerate()
+    #robot.ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(robot, iktype=openravepy.IkParameterization.Type.Transform6D)
+    #if not robot.ikmodel.load():
+    #    robot.ikmodel.autogenerate()
 
     # Create environments for planning the arm and base
     resolution = [args.hres, args.hres, args.tres]
     herb = HerbRobot(env, robot, args.manip)
-    arm_env = HerbEnvironment(herb)
+    #arm_env = HerbEnvironment(herb)
     herb_base = SimpleRobot(env, robot)
-    base_env = SimpleEnvironment(herb_base, resolution)
+    #base_env = SimpleEnvironment(herb_base, resolution)
 
-    base_planner = AStarPlanner(base_env, visualize = False)
+    #base_planner = AStarPlanner(base_env, visualize = False)
+    base_planner = None
     arm_planner = None
     # TODO: Here initialize your arm planner
   
@@ -88,6 +90,7 @@ if __name__ == "__main__":
                               [ 0, 1,  0, 0], 
                               [ 0, 0,  0, 1]])
     table.SetTransform(table_pose)
+
 
     # set a bottle on the table
     bottle = herb.robot.GetEnv().ReadKinBodyXMLFile('models/objects/fuze_bottle.kinbody.xml')
@@ -112,8 +115,7 @@ if __name__ == "__main__":
     #planner.PlanToGrasp(bottle)
 
     planner.GetBasePoseForObjectGrasp(bottle)
-    #import IPython
-    #IPython.embed()
+
 
 
         
