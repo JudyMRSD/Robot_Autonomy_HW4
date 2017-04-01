@@ -41,8 +41,8 @@ class GraspPlanner(object):
         if not self.irmodel.load():
             print 'do you want to generate irmodel for your robot? it might take several hours'
             print 'or you can go to http://people.csail.mit.edu/liuhuan/pr2/openrave/openrave_database/ to get the database for PR2'
-            input = raw_input('[Y/n]')
-            if input == 'y' or input == 'Y' or input == '\n' or input == '':
+            inumpyut = raw_inumpyut('[Y/n]')
+            if inumpyut == 'y' or inumpyut == 'Y' or inumpyut == '\n' or inumpyut == '':
                 #class IrmodelOption:
                 self.irmodel.autogenerate()
                 self.irmodel.load()
@@ -86,7 +86,7 @@ class GraspPlanner(object):
         trans_pose = self.robot.GetTransform()
         angle_pose = openravepy.axisAngleFromRotationMatrix(trans_pose)
         pose = [trans_pose[0,3],trans_pose[1,3],angle_pose[2]]
-        base_pose = np.array(pose)
+        base_pose = numpy.array(pose)
 
         grasp_config = q
 
@@ -135,7 +135,7 @@ class GraspPlanner(object):
             grasp[self.gmodel.graspindices.get('performance')] = self.eval_grasp(grasp)
     
     	# sort!
-        order = np.argsort(self.grasps_ordered[:,self.gmodel.graspindices.get('performance')[0]])
+        order = numpy.argsort(self.grasps_ordered[:,self.gmodel.graspindices.get('performance')[0]])
         order = order[::-1]
         self.grasps_ordered = self.grasps_ordered[order]
 
@@ -149,7 +149,7 @@ class GraspPlanner(object):
 	        
 	          num_contacts = len(contacts)
 	          # for each contact
-	          G = np.zeros([6, num_contacts]) #the wrench matrix
+	          G = numpy.zeros([6, num_contacts]) #the wrench matrix
 
 	          for idx, c in enumerate(contacts):
 	            pos = c[0:3] - obj_position
@@ -158,27 +158,27 @@ class GraspPlanner(object):
 	          
 	            #TODO fill G
 	            G[0:3,idx] = dir.T
-	            G[3:6,idx] = np.cross(pos,dir).T
+	            G[3:6,idx] = numpy.cross(pos,dir).T
 	        
 	          #TODO use G to compute scrores as discussed in class
-	          U, s, V = np.linalg.svd(G, full_matrices=True)
+	          U, s, V = numpy.linalg.svd(G, full_matrices=True)
 	        
 	          # print U.shape, s.shape, V.shape
 	          # Metric 1 minimum singular value
 	          if s.all() >= 0:
-	            m1 = np.amin(s)
+	            m1 = numpy.amin(s)
 	          else:
 	            m1 = 0
 
 	        # Metric 2: volume of the ellipsoid  
-	          if np.linalg.det(np.dot(G,G.T)) >= 0:
-	            m2 = np.sqrt(np.linalg.det(np.dot(G,G.T)))
+	          if numpy.linalg.det(numpy.dot(G,G.T)) >= 0:
+	            m2 = numpy.sqrt(numpy.linalg.det(numpy.dot(G,G.T)))
 	          else:
 	            m2 = 0;
 	        
 	        #Metric 3: Isotropy
-	          sigma_min = np.amin(s)
-	          sigma_max = np.amax(s)
+	          sigma_min = numpy.amin(s)
+	          sigma_max = numpy.amax(s)
 
 	          if sigma_max > 0:
 	            m3 = sigma_min / sigma_max
@@ -190,7 +190,7 @@ class GraspPlanner(object):
 	        # print 'm1: ' + repr(m1) + '\nm2: ' + repr(m2) + '\nm3: ' + repr(m3)
 	        # rationale, m1 and m3 are highly correlated so I bring them to about the same order of magnitude
 	        # m2, is very small and boosted to about the same order of magnitude as well
-	          if np.linalg.matrix_rank(G) == 6:
+	          if numpy.linalg.matrix_rank(G) == 6:
 	            return 100*m1+50000*m2+1000*m3 
 	          else:
 	            return 0
