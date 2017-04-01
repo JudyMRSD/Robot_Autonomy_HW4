@@ -64,9 +64,9 @@ if __name__ == "__main__":
         robot.SetActiveManipulator('left_wam')
 
     robot.controller = openravepy.RaveCreateController(robot.GetEnv(), 'IdealController')
-    robot.ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(robot, iktype=openravepy.IkParameterization.Type.Transform6D)
-    if not robot.ikmodel.load():
-        robot.ikmodel.autogenerate()
+    #robot.ikmodel = openravepy.databases.inversekinematics.InverseKinematicsModel(robot, iktype=openravepy.IkParameterization.Type.Transform6D)
+    #if not robot.ikmodel.load():
+    #    robot.ikmodel.autogenerate()
 
     # Create environments for planning the arm and base
     resolution = [args.hres, args.hres, args.tres]
@@ -112,8 +112,8 @@ if __name__ == "__main__":
     #planner.PlanToGrasp(bottle)
     planner.GetBasePoseForObjectGrasp(bottle)
 
-    import IPython
-    IPython.embed()
+    #import IPython
+    #IPython.embed()
 
 
         

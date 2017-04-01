@@ -1,4 +1,8 @@
 import logging, numpy, openravepy
+import time
+from openravepy.databases import inversereachability
+from openravepy import IkFilterOptions
+import math
 
 class GraspPlanner(object):
 
@@ -23,19 +27,19 @@ class GraspPlanner(object):
         #  a base pose and associated grasp config for the 
         #  grasping the bottle
         ###################################################################
-        self.irmodel = inversereachability.InverseReachabilityModel(robot)
+        irmodel = openravepy.databases.inversereachability.InverseReachabilityModel(robot = self.robot)
         print "load"
         starttime = time.time()
         print 'loading irmodel'
-        if not self.irmodel.load():
+        if not irmodel.load():
             print 'do you want to generate irmodel for your robot? it might take several hours'
             print 'or you can go to http://people.csail.mit.edu/liuhuan/pr2/openrave/openrave_database/ to get the database for PR2'
-            input = raw_input('[Y/n]')
-        else:
-            print ("load finished")
-                
+            irmodel.autogenerate()
+            irmodel.load()
+        
         print 'time to load inverse-reachability model: %fs'%(time.time()-starttime)
 
+        print "finished loading"
         return base_pose, grasp_config
 
     def PlanToGrasp(self, obj):

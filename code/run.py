@@ -71,11 +71,13 @@ if __name__ == "__main__":
     # Create environments for planning the arm and base
     resolution = [args.hres, args.hres, args.tres]
     herb = HerbRobot(env, robot, args.manip)
-    arm_env = HerbEnvironment(herb)
+    #arm_env = HerbEnvironment(herb)
     herb_base = SimpleRobot(env, robot)
-    base_env = SimpleEnvironment(herb_base, resolution)
+    #base_env = SimpleEnvironment(herb_base, resolution)
 
-    base_planner = AStarPlanner(base_env, visualize = False)
+    #base_planner = AStarPlanner(base_env, visualize = False)
+    base_planner = None
+
     arm_planner = None
     # TODO: Here initialize your arm planner
   
@@ -108,7 +110,8 @@ if __name__ == "__main__":
     bottle.SetTransform(bottle_transform)
  
     planner = GraspPlanner(herb.robot, base_planner, arm_planner)
-    planner.PlanToGrasp(bottle)
+    #planner.PlanToGrasp(bottle)
+    planner.GetBasePoseForObjectGrasp(bottle)
 
     import IPython
     IPython.embed()
