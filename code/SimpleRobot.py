@@ -36,7 +36,7 @@ class SimpleRobot(object):
 
             for fconfig in action.footprint:
                 new_config = fconfig.copy()
-                new_config[:2] += config[:2]
+                #new_config[:2] += config[:2]
                 self.SetCurrentConfiguration(new_config)
-                time.sleep(0.001)
+                time.sleep(1)
 

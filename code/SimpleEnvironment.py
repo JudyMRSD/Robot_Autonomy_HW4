@@ -126,7 +126,8 @@ class SimpleEnvironment(object):
                 successor_control = avail_actions[i].control
                 final_config = true_footprint[-1]
                 successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
-                successors.append([successor_id, Action(successor_control, true_footprint)])
+                succ_config = self.discrete_env.NodeIdToConfiguration(successor_id)
+                successors.append([successor_id, Action(successor_control, numpy.array(true_footprint))])
 
         return successors
 
@@ -136,6 +137,7 @@ class SimpleEnvironment(object):
         Call self.RobotIsInCollisionAt() to check collision in current state
              self.RobotIsInCollisionAt(np2darray) to check at another point
         """        
+        lower_limits, upper_limits = self.boundary_limits
 
         if point is None:
             return self.robot.GetEnv().CheckCollision(self.robot)
@@ -152,7 +154,7 @@ class SimpleEnvironment(object):
         check_state[:3, :3] = numpy.array([[numpy.cos(point[2]), -numpy.sin(point[2]),0.0],[numpy.sin(point[2]),numpy.cos(point[2]),0.0],[0.0,0.0,1.0]])
         
         self.robot.SetTransform(check_state) 
-        in_collision = self.robot.GetEnv().CheckCollision(self.robot) and ((config < lower_limits).any() or (config > upper_limits).any())
+        in_collision = self.robot.GetEnv().CheckCollision(self.robot) and ((point < lower_limits).any() or (point > upper_limits).any())
         self.robot.SetTransform(current_state)  # move robot back to current state
 
         return in_collision
