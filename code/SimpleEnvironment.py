@@ -120,7 +120,6 @@ class SimpleEnvironment(object):
                 #if not self.RobotIsInCollisionAt(true_config):
                     true_footprint.append(true_config)
                 else:
-                    print('COLLISION ' + str(avail_actions[i].footprint[j]))
                     # go to next action
                     check = -1 
                     break
@@ -161,10 +160,10 @@ class SimpleEnvironment(object):
 
         return in_collision
 
-    # Aooly loc to current transform and return new transform
+    # Apply loc to current transform and return new transform
     def ApplyMotion(self, loc):
         new_transform =  self.robot.GetTransform()
-        for i in range(len(loc)):
+        for i in range(len(loc[0:2])):
             new_transform[i][3] = loc[i]
         return new_transform
 
