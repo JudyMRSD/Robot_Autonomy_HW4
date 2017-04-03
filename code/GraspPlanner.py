@@ -12,6 +12,7 @@ class GraspPlanner(object):
         self.manip = self.robot.GetActiveManipulator()
         self.base_planner = base_planner
         self.arm_planner = arm_planner
+	#self.task_manipulation = openravepy.interfaces.TaskManipulation(self.robot)
 
             
     def GetBasePoseForObjectGrasp(self, obj):
@@ -116,7 +117,7 @@ class GraspPlanner(object):
 
         # Grasp the bottle
         task_manipulation = openravepy.interfaces.TaskManipulation(self.robot)
-        task_manipultion.CloseFingers()
+        task_manipulation.CloseFingers()
 
 
 
