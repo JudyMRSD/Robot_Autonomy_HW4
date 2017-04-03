@@ -115,10 +115,12 @@ class SimpleEnvironment(object):
             for j in range(len(avail_actions[i].footprint)):
                 true_footprint = []
                 check = 0;
-                if not self.RobotIsInCollisionAt(avail_actions[i].footprint[j]):
-                    true_config = [config[0] + avail_actions[i].footprint[j][0], config[1] + avail_actions[i].footprint[j][1], avail_actions[i].footprint[j][2]]
+                true_config = [config[0] + avail_actions[i].footprint[j][0], config[1] + avail_actions[i].footprint[j][1], avail_actions[i].footprint[j][2]]
+                if not self.CheckCollision(true_config):
+                #if not self.RobotIsInCollisionAt(true_config):
                     true_footprint.append(true_config)
                 else:
+                    print('COLLISION ' + str(avail_actions[i].footprint[j]))
                     # go to next action
                     check = -1 
                     break
@@ -159,6 +161,29 @@ class SimpleEnvironment(object):
 
         return in_collision
 
+    # Aooly loc to current transform and return new transform
+    def ApplyMotion(self, loc):
+        new_transform =  self.robot.GetTransform()
+        for i in range(len(loc)):
+            new_transform[i][3] = loc[i]
+        return new_transform
+
+    # Check if new locn has collisions
+    def CheckCollision(self, locn):
+        collisions = []
+        with self.robot.GetEnv():
+            # Apply new_locn to current robot transform
+            orig_transform = self.robot.GetTransform()
+            new_transform = self.ApplyMotion(locn)
+            self.robot.SetTransform(new_transform)
+
+            # Check for collision
+            bodies = self.robot.GetEnv().GetBodies()[1:]
+            collisions = map(lambda body: self.robot.GetEnv().CheckCollision(self.robot, body), bodies)                
+
+            # Set robot back to original transform
+            self.robot.SetTransform(orig_transform)
+        return reduce(lambda x1, x2: x1 or x2, collisions)
 
     def ComputeDistance(self, start_id, end_id):
         start_config = self.discrete_env.NodeIdToConfiguration(start_id)
