@@ -112,6 +112,9 @@ class AStarPlanner(object):
            
 
         plan = []
+        if goal_id == start_id:
+            return np.array(plan)
+
         if (goal_id not in node_info):
             self.log ('Goal not reached ! Cannot plan path')
         else:
