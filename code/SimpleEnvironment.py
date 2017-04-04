@@ -118,13 +118,16 @@ class SimpleEnvironment(object):
             final_config = [config[0] + avail_actions[i].footprint[-1][0], config[1] + avail_actions[i].footprint[-1][1], avail_actions[i].footprint[-1][2]]
             if not self.RobotIsInCollisionAt(final_config):
                 true_footprint = []
+
                 for j in range(len(avail_actions[i].footprint)):
                     true_config = [config[0] + avail_actions[i].footprint[j][0], config[1] + avail_actions[i].footprint[j][1], avail_actions[i].footprint[j][2]]
+
                     true_footprint.append(true_config)
                 successor_control = avail_actions[i].control
                 final_config = true_footprint[-1]
                 successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
                 #succ_config = self.discrete_env.NodeIdToConfiguration(successor_id)
+
                 successors.append([successor_id, Action(successor_control, numpy.array(true_footprint))])
 
         return successors
@@ -135,6 +138,7 @@ class SimpleEnvironment(object):
         Call self.RobotIsInCollisionAt() to check collision in current state
              self.RobotIsInCollisionAt(np2darray) to check at another point
         """        
+        lower_limits, upper_limits = self.boundary_limits
 
         lower_limits, upper_limits = self.boundary_limits
 
@@ -152,6 +156,7 @@ class SimpleEnvironment(object):
         check_state[:3, 3] = numpy.array([point[0], point[1], 0.0])
         check_state[:3, :3] = numpy.array([[numpy.cos(point[2]), -numpy.sin(point[2]),0.0],[numpy.sin(point[2]),numpy.cos(point[2]),0.0],[0.0,0.0,1.0]])
         
+
         self.robot.SetTransform(check_state)
         collision = False
         for body in self.robot.GetEnv().GetBodies()[1:]:
@@ -165,10 +170,34 @@ class SimpleEnvironment(object):
         #         print "in collision!"
 
         in_collision = collision or ((point < lower_limits).any() or (point > upper_limits).any())
+
         self.robot.SetTransform(current_state)  # move robot back to current state
 
         return in_collision
 
+    # Apply loc to current transform and return new transform
+    def ApplyMotion(self, loc):
+        new_transform =  self.robot.GetTransform()
+        for i in range(len(loc[0:2])):
+            new_transform[i][3] = loc[i]
+        return new_transform
+
+    # Check if new locn has collisions
+    def CheckCollision(self, locn):
+        collisions = []
+        with self.robot.GetEnv():
+            # Apply new_locn to current robot transform
+            orig_transform = self.robot.GetTransform()
+            new_transform = self.ApplyMotion(locn)
+            self.robot.SetTransform(new_transform)
+
+            # Check for collision
+            bodies = self.robot.GetEnv().GetBodies()[1:]
+            collisions = map(lambda body: self.robot.GetEnv().CheckCollision(self.robot, body), bodies)                
+
+            # Set robot back to original transform
+            self.robot.SetTransform(orig_transform)
+        return reduce(lambda x1, x2: x1 or x2, collisions)
 
     def ComputeDistance(self, start_id, end_id):
         start_config = self.discrete_env.NodeIdToConfiguration(start_id)

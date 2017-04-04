@@ -4,12 +4,12 @@ import heapq
 
 class NodeInfo:
 
-    def __init__(self, node_id, parent_id, start_id, goal_id, planning_env, control):
+    def __init__(self, node_id, parent_id, start_id, goal_id, planning_env, action):
         self.node_id = node_id
         self.parent_id = parent_id
         self.start_id = start_id
         self.goal_id = goal_id
-        self.control = control
+        self.action = action
         self.planning_env = planning_env
         self.node_config = planning_env.discrete_env.NodeIdToConfiguration(node_id)
 
@@ -22,10 +22,10 @@ class NodeInfo:
     def computeHeuristic(self):
         return self.hops2start + 3*self.dist2goal
 
-    def updateParent(self, parent_id, hops2start, control):
+    def updateParent(self, parent_id, hops2start, action):
         self.parent_id = parent_id
         self.hops2start = hops2start
-        self.control = control
+        self.action = action
 
 class AStarPlanner(object):
 
@@ -70,7 +70,6 @@ class AStarPlanner(object):
         heapq.heapify(open_set)
        
         while (len(open_set) > 0):
-            raw_input('')
             self.log('\nCurr queue ' + str(open_set), False)
 
             (t, node_id) = heapq.heappop(open_set)
@@ -94,16 +93,16 @@ class AStarPlanner(object):
             successors = self.planning_env.GetSuccessors(node_id)
 
             if len(successors) != 0:          
-                for [succ_id, control] in successors:
+                for [succ_id, action] in successors:
                     self.log('Successor ' + str(succ_id), False)
                     if succ_id not in closed_set:
                         if succ_id in node_info:  
                             self.log('Successor visited ' + str(succ_id), False)
                             if node_info[succ_id].hops2start > node_info[node_id].hops2start+1:
-                                node_info[succ_id].updateParent(node_id, node_info[node_id].hops2start+1, control)
+                                node_info[succ_id].updateParent(node_id, node_info[node_id].hops2start+1, action)
                         else: 
                             # Successor seen for the first time.
-                            node_info[succ_id] = NodeInfo(succ_id, node_id, start_id, goal_id, self.planning_env, control)
+                            node_info[succ_id] = NodeInfo(succ_id, node_id, start_id, goal_id, self.planning_env, action)
                             self.log('Adding successor %s .. dist2goal : %s config: %s' %(succ_id, node_info[succ_id].dist2goal, node_info[succ_id].node_config), False)
                             heapq.heappush(open_set, (node_info[succ_id].computeHeuristic(), succ_id))
                     else:
@@ -113,13 +112,15 @@ class AStarPlanner(object):
            
 
         plan = []
+        if goal_id == start_id:
+            return np.array(plan)
+
         if (goal_id not in node_info):
             self.log ('Goal not reached ! Cannot plan path')
         else:
             path = [node_info[goal_id]]
             while path[-1].parent_id != start_id:
                 path.append(node_info[path[-1].parent_id])
-            path.append(node_info[start_id])
         
             plan =  path[::-1]
             elapsed = (datetime.datetime.now() - start).seconds
@@ -129,6 +130,7 @@ class AStarPlanner(object):
 
             if self.visualize and hasattr(self.planning_env, 'InitializePlot'):
                 self.planning_env.InitializePlot(goal_config)
-                [self.planning_env.PlotEdge(plan[i-1].node_config, plan[i].node_config) for i in range(1,len(plan))]
+                [self.planning_env.PlotEdge(plan[i-1].action.footprint[-1], plan[i].action.footprint[-1]) for i in range(1,len(plan))]
 
-        return np.array(plan)
+        actions = [item.action for item in plan]
+        return np.array(actions)

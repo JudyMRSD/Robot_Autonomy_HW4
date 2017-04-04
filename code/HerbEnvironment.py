@@ -4,6 +4,7 @@ import time
 class HerbEnvironment(object):
     
     def __init__(self, herb):
+        self.herb = herb
         self.robot = herb.robot
 
         # add a table and move the robot into place

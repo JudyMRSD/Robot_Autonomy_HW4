@@ -8,11 +8,8 @@ class GraspPlanner(object):
 
     def __init__(self, robot, base_planner, arm_planner):
         self.robot = robot
-        self.env = self.robot.GetEnv()
-        self.manip = self.robot.GetActiveManipulator()
-        self.base_planner = base_planner
+        #self.base_planner = base_planner
         self.arm_planner = arm_planner
-	#self.task_manipulation = openravepy.interfaces.TaskManipulation(self.robot)
 
             
     def GetBasePoseForObjectGrasp(self, obj):
@@ -33,35 +30,47 @@ class GraspPlanner(object):
         #get the ordered valid grasp from homework1
         self.graspindices = self.gmodel.graspindices
         self.grasps = self.gmodel.grasps
-        self.order_grasps()
-
+        grasp_config = self.order_grasps()
+        #choose the first valid grasp
+        validgrasp = grasp_config[0]
         # get the grasp transform
-        Tgrasp = self.gmodel.getGlobalGraspTransform(self.grasps_ordered[10],collisionfree=True) 
+        Tgrasp = self.gmodel.getGlobalGraspTransform(validgrasp,collisionfree=True) 
 
         # load inverserechability database
-        irmodel = openravepy.databases.inversereachability.InverseReachabilityModel(robot=self.robot)
+        self.irmodel = openravepy.databases.inversereachability.InverseReachabilityModel(robot=self.robot)
         starttime = time.time()
         print 'loading irmodel'
-        if not irmodel.load():
-            irmodel.autogenerate()
-        loaded = irmodel.load()
-        print "irmodel loaded? {}".format(loaded)
+        if not self.irmodel.load():
+            print 'do you want to generate irmodel for your robot? it might take several hours'
+            print 'or you can go to http://people.csail.mit.edu/liuhuan/pr2/openrave/openrave_database/ to get the database for PR2'
+            inumpyut = raw_inumpyut('[Y/n]')
+            if inumpyut == 'y' or inumpyut == 'Y' or inumpyut == '\n' or inumpyut == '':
+                #class IrmodelOption:
+                self.irmodel.autogenerate()
+                self.irmodel.load()
+            else:
+                raise ValueError('')
+        
+        print 'time to load inverse-reachability model: %fs'%(time.time()-starttime)
 
-        densityfn,samplerfn,bounds = irmodel.computeBaseDistribution(Tgrasp)
+        densityfn,samplerfn,bounds = self.irmodel.computeBaseDistribution(Tgrasp)
 
-        #find the valid pose and joint states
-        # initialize sampling parameters
+		#find the valid pose and joint states
+		# initialize sampling parameters
         goals = []
         numfailures = 0
-        N = 3
+        starttime = time.time()
+        timeout = inf
         with self.robot:
-            while len(goals) < N:
+            while len(goals) < 3:
+                if time.time()-starttime > timeout:
+                    break
                 poses,jointstate = samplerfn(N-len(goals))
                 for pose in poses:
                     self.robot.SetTransform(pose)
                     self.robot.SetDOFValues(*jointstate)
                     # validate that base is not in collision
-                    if not self.manip.CheckIndependentCollision(openravepy.CollisionReport()):
+                    if not self.manip.CheckIndependentCollision(CollisionReport()):
                         q = self.manip.FindIKSolution(Tgrasp,filteroptions=IkFilterOptions.CheckEnvCollisions)
                         if q is not None:
                             values = self.robot.GetDOFValues()
@@ -73,9 +82,9 @@ class GraspPlanner(object):
         #base_pose = goals[0][1]
         #grasp_config = goals[0][2]
         for i,goal in enumerate(goals):
-            grasp_with_pose,pose,values =goal
-            self.robot.SetTransform(pose)
-            self.robot.SetJointValues(values)
+        	grasp_with_pose,pose,values =goal
+        	self.robot.SetTransform(pose)
+        	self.robot.SetJointValues(values)
         trans_pose = self.robot.GetTransform()
         angle_pose = openravepy.axisAngleFromRotationMatrix(trans_pose)
         pose = [trans_pose[0,3],trans_pose[1,3],angle_pose[2]]
@@ -83,11 +92,9 @@ class GraspPlanner(object):
 
         grasp_config = q
 
-        #import IPython
-        #IPython.embed()
-        print "grasping result"
-        print base_pose
-        print grasp_config
+        import IPython
+        IPython.embed()
+
         return base_pose, grasp_config
 
     def PlanToGrasp(self, obj):
@@ -117,7 +124,7 @@ class GraspPlanner(object):
 
         # Grasp the bottle
         task_manipulation = openravepy.interfaces.TaskManipulation(self.robot)
-        task_manipulation.CloseFingers()
+        task_manipultion.CloseFingers()
 
 
 
@@ -129,69 +136,69 @@ class GraspPlanner(object):
         for grasp in self.grasps_ordered:
             grasp[self.graspindices.get('performance')] = self.eval_grasp(grasp)
     
-        # sort!
+    	# sort!
         order = numpy.argsort(self.grasps_ordered[:,self.graspindices.get('performance')[0]])
         order = order[::-1]
         self.grasps_ordered = self.grasps_ordered[order]
 
     def eval_grasp(self, grasp):
-        with self.robot:
+      	with self.robot:
       #contacts is a 2d array, where contacts[i,0-2] are the positions of contact i and contacts[i,3-5] is the direction
-            try:
-              contacts,finalconfig,mindist,volume = self.gmodel.testGrasp(grasp=grasp,translate=True,forceclosure=False)
+	        try:
+	          contacts,finalconfig,mindist,volume = self.gmodel.testGrasp(grasp=grasp,translate=True,forceclosure=False)
 
-              obj_position = self.gmodel.target.GetTransform()[0:3,3]   
-            
-              num_contacts = len(contacts)
-              # for each contact
-              G = numpy.zeros([6, num_contacts]) #the wrench matrix
+	          obj_position = self.gmodel.target.GetTransform()[0:3,3]   
+	        
+	          num_contacts = len(contacts)
+	          # for each contact
+	          G = numpy.zeros([6, num_contacts]) #the wrench matrix
 
-              for idx, c in enumerate(contacts):
-                pos = c[0:3] - obj_position
-                # print pos
-                dir = -c[3:] #this is already a unit vector
-              
-                #TODO fill G
-                G[0:3,idx] = dir.T
-                G[3:6,idx] = numpy.cross(pos,dir).T
-            
-              #TODO use G to compute scrores as discussed in class
-              U, s, V = numpy.linalg.svd(G, full_matrices=True)
-            
-              # print U.shape, s.shape, V.shape
-              # Metric 1 minimum singular value
-              if s.all() >= 0:
-                m1 = numpy.amin(s)
-              else:
-                m1 = 0
+	          for idx, c in enumerate(contacts):
+	            pos = c[0:3] - obj_position
+	            # print pos
+	            dir = -c[3:] #this is already a unit vector
+	          
+	            #TODO fill G
+	            G[0:3,idx] = dir.T
+	            G[3:6,idx] = numpy.cross(pos,dir).T
+	        
+	          #TODO use G to compute scrores as discussed in class
+	          U, s, V = numpy.linalg.svd(G, full_matrices=True)
+	        
+	          # print U.shape, s.shape, V.shape
+	          # Metric 1 minimum singular value
+	          if s.all() >= 0:
+	            m1 = numpy.amin(s)
+	          else:
+	            m1 = 0
 
-            # Metric 2: volume of the ellipsoid  
-              if numpy.linalg.det(numpy.dot(G,G.T)) >= 0:
-                m2 = numpy.sqrt(numpy.linalg.det(numpy.dot(G,G.T)))
-              else:
-                m2 = 0;
-            
-            #Metric 3: Isotropy
-              sigma_min = numpy.amin(s)
-              sigma_max = numpy.amax(s)
+	        # Metric 2: volume of the ellipsoid  
+	          if numpy.linalg.det(numpy.dot(G,G.T)) >= 0:
+	            m2 = numpy.sqrt(numpy.linalg.det(numpy.dot(G,G.T)))
+	          else:
+	            m2 = 0;
+	        
+	        #Metric 3: Isotropy
+	          sigma_min = numpy.amin(s)
+	          sigma_max = numpy.amax(s)
 
-              if sigma_max > 0:
-                m3 = sigma_min / sigma_max
-              else:
-                m3 = 0
+	          if sigma_max > 0:
+	            m3 = sigma_min / sigma_max
+	          else:
+	            m3 = 0
 
-            # print U.shape, s.shape, V.shape
-            #Need to come up with weights for each of the metric for evaluation function
-            # print 'm1: ' + repr(m1) + '\nm2: ' + repr(m2) + '\nm3: ' + repr(m3)
-            # rationale, m1 and m3 are highly correlated so I bring them to about the same order of magnitude
-            # m2, is very small and boosted to about the same order of magnitude as well
-              if numpy.linalg.matrix_rank(G) == 6:
-                return 100*m1+50000*m2+1000*m3 
-              else:
-                return 0
+	        # print U.shape, s.shape, V.shape
+	        #Need to come up with weights for each of the metric for evaluation function
+	        # print 'm1: ' + repr(m1) + '\nm2: ' + repr(m2) + '\nm3: ' + repr(m3)
+	        # rationale, m1 and m3 are highly correlated so I bring them to about the same order of magnitude
+	        # m2, is very small and boosted to about the same order of magnitude as well
+	          if numpy.linalg.matrix_rank(G) == 6:
+	            return 100*m1+50000*m2+1000*m3 
+	          else:
+	            return 0
 
 
-            except openravepy.planning_error,e:
-            #you get here if there is a failure in planning
-            #example: if the hand is already intersecting the object at the initial position/orientation
-              return  0.00 # TODO you may want to change this
+	        except openravepy.planning_error,e:
+	        #you get here if there is a failure in planning
+	        #example: if the hand is already intersecting the object at the initial position/orientation
+	          return  0.00 # TODO you may want to change this
