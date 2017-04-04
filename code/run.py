@@ -111,6 +111,7 @@ if __name__ == "__main__":
  
     planner = GraspPlanner(herb.robot, base_planner, arm_planner)
     planner.PlanToGrasp(bottle)
+    print "finished run.py"
 
     #import IPython
     #IPython.embed()

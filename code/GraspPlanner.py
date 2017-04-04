@@ -31,6 +31,9 @@ class GraspPlanner(object):
         #  grasping the bottle
         ###################################################################
         #get the ordered valid grasp from homework1
+
+        print "robot start transformation -----------------"
+        print self.robot.GetTransform()
         self.graspindices = self.gmodel.graspindices
         self.grasps = self.gmodel.grasps
         self.order_grasps()
@@ -54,7 +57,7 @@ class GraspPlanner(object):
         goals = []
         numfailures = 0
         N = 3
-        with self.robot:
+        with self.robot.GetEnv():
             while len(goals) < N:
                 poses,jointstate = samplerfn(N-len(goals))
                 for pose in poses:
@@ -113,11 +116,15 @@ class GraspPlanner(object):
         arm_traj = self.arm_planner.planning_env.herb.ConvertPlanToTrajectory(arm_plan)
 
         print 'Executing arm trajectory'
+        print arm_traj
         self.arm_planner.planning_env.herb.ExecuteTrajectory(arm_traj)
-
+        print "execute trajectory----------------"
         # Grasp the bottle
         task_manipulation = openravepy.interfaces.TaskManipulation(self.robot)
+        print "task manipulation---------------------"
         task_manipulation.CloseFingers()
+	raw_input('')
+        print "close fingers"
 
 
 
