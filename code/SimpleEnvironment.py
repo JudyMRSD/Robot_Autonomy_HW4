@@ -111,23 +111,23 @@ class SimpleEnvironment(object):
         coord = self.discrete_env.NodeIdToGridCoord(node_id)
         avail_actions = self.actions[coord[2]]
 
+        # print '....................'
+        # print avail_actions
+        # print '....................'
         for i in range(len(avail_actions)):
-            for j in range(len(avail_actions[i].footprint)):
+            final_config = [config[0] + avail_actions[i].footprint[-1][0], config[1] + avail_actions[i].footprint[-1][1], avail_actions[i].footprint[-1][2]]
+            if not self.RobotIsInCollisionAt(final_config):
                 true_footprint = []
-                check = 0;
-                true_config = [config[0] + avail_actions[i].footprint[j][0], config[1] + avail_actions[i].footprint[j][1], avail_actions[i].footprint[j][2]]
-                if not self.CheckCollision(true_config):
-                #if not self.RobotIsInCollisionAt(true_config):
+
+                for j in range(len(avail_actions[i].footprint)):
+                    true_config = [config[0] + avail_actions[i].footprint[j][0], config[1] + avail_actions[i].footprint[j][1], avail_actions[i].footprint[j][2]]
+
                     true_footprint.append(true_config)
-                else:
-                    # go to next action
-                    check = -1 
-                    break
-            if (check != -1):
                 successor_control = avail_actions[i].control
                 final_config = true_footprint[-1]
                 successor_id  = self.discrete_env.ConfigurationToNodeId(final_config)
-                succ_config = self.discrete_env.NodeIdToConfiguration(successor_id)
+                #succ_config = self.discrete_env.NodeIdToConfiguration(successor_id)
+
                 successors.append([successor_id, Action(successor_control, numpy.array(true_footprint))])
 
         return successors
@@ -138,6 +138,8 @@ class SimpleEnvironment(object):
         Call self.RobotIsInCollisionAt() to check collision in current state
              self.RobotIsInCollisionAt(np2darray) to check at another point
         """        
+        lower_limits, upper_limits = self.boundary_limits
+
         lower_limits, upper_limits = self.boundary_limits
 
         if point is None:
@@ -154,8 +156,21 @@ class SimpleEnvironment(object):
         check_state[:3, 3] = numpy.array([point[0], point[1], 0.0])
         check_state[:3, :3] = numpy.array([[numpy.cos(point[2]), -numpy.sin(point[2]),0.0],[numpy.sin(point[2]),numpy.cos(point[2]),0.0],[0.0,0.0,1.0]])
         
-        self.robot.SetTransform(check_state) 
-        in_collision = self.robot.GetEnv().CheckCollision(self.robot) and ((point < lower_limits).any() or (point > upper_limits).any())
+
+        self.robot.SetTransform(check_state)
+        collision = False
+        for body in self.robot.GetEnv().GetBodies()[1:]:
+            if self.robot.GetEnv().CheckCollision(self.robot, body):
+                collision = True
+                print "in collision!"
+
+
+       	# if self.robot.GetEnv().CheckCollision(self.robot):
+        #         collision = True
+        #         print "in collision!"
+
+        in_collision = collision or ((point < lower_limits).any() or (point > upper_limits).any())
+
         self.robot.SetTransform(current_state)  # move robot back to current state
 
         return in_collision
