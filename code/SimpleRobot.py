@@ -38,5 +38,5 @@ class SimpleRobot(object):
                 new_config = fconfig.copy()
                 #new_config[:2] += config[:2]
                 self.SetCurrentConfiguration(new_config)
-                time.sleep(1)
+                time.sleep(0.001)
 
