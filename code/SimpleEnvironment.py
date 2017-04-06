@@ -8,6 +8,10 @@ class Control(object):
         self.ur = omega_right
         self.dt = duration
 
+    def __str__(self):
+        return 'Ctrl_' + str(self.ul) + '_' + str(self.ur) + '_' + str(self.dt)
+
+
 class Action(object):
     def __init__(self, control, footprint):
         self.control = control
@@ -72,12 +76,14 @@ class SimpleEnvironment(object):
         lower_limits, upper_limits = self.boundary_limits
         pl.xlim([lower_limits[0], upper_limits[0]])
         pl.ylim([lower_limits[1], upper_limits[1]])
-        
+        print('Numactions: ' ,len(actions), len(self.actions))
         for action in actions:
             xpoints = [config[0] for config in action.footprint]
             ypoints = [config[1] for config in action.footprint]
             pl.plot(xpoints, ypoints, 'k')
-                     
+#            title = 'Controls =' +  str(action.control) +', Orientation = ' + str(idx)
+#            pl.title(title)
+#            fig.savefig(str(action.control)+'_Idx_'+str(idx) + '.png')
         pl.ion()
         pl.show()
 
@@ -101,6 +107,11 @@ class SimpleEnvironment(object):
             controls = [Control(1.0,1.0,.5), Control(1.0,-1.0,.5), Control(-1.0,-1.0,.5), Control(-1.0,1.0,.5)]
             for control in controls:
                 self.actions[idx].append(Action(control, self.GenerateFootprintFromControl(start_config, control, 0.01))) 
+
+#        for idx in range(len(self.actions)):
+#            self.PlotActionFootprints(idx)
+#            raw_input('')
+
 
 
     def GetSuccessors(self, node_id):
